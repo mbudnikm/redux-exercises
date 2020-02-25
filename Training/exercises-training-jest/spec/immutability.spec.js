@@ -1,3 +1,5 @@
+import produce from "immer"
+
 const { getTodos } = require('../data')
 const todos = getTodos()
 
@@ -23,6 +25,13 @@ describe('Immutability', () => {
 		it('merge two objects', () => {
 			// define `merge2objects` function here
 			// for 2 given parameters, the function returns an new merged object 
+			const merge2objects = (obj1, obj2) => {
+				// return Object.assign({}, obj1, obj2)
+				return ({
+					...obj1,
+					...obj2
+				})
+			}
 	
 			expect(merge2objects(john, musician)).toEqual({
 				firstname: "John", lastname: "Lennon", profession: "musician", salary: 5000
@@ -36,6 +45,17 @@ describe('Immutability', () => {
 		it('merging multiple objects', () => {
 			// define `mergeManyObjects` function here
 			// same as above, but accepts multiple objects as input parameters 
+			const mergeManyObjects = (...args) => {
+				return Object.assign({}, ...args)
+			}
+
+			// soultion (2)
+			/*const mergeManyObjects = (...objects) => {
+				let result = {}
+				for(let obj of objects) {
+
+				}
+			}*/
 	
 			expect(mergeManyObjects({ id: 8492745921 }, john, musician)).toEqual({
 				id: 8492745921, firstname: "John", lastname: "Lennon", profession: "musician", salary: 5000
@@ -49,6 +69,12 @@ describe('Immutability', () => {
 		it('strip static attribute from objects', () => {
 			// define `stripId` function here
 			// it will return an immutable version of input object with `id` removed
+			const stripId = (obj) => {
+				const clone = Object.assign({}, ...obj)
+				delete clone.id
+				return clone
+			} 
+			//var stripId = ({id, ...obj}) => ({...obj})
 	
 			// all following expectations check the same - `id` attr should have been removed
 			expect(stripId({
@@ -119,7 +145,18 @@ describe('Immutable operations usecases: State Objects', () => {
 
 		const section = 'home'
 		const newFilter = 'COMPLETED'
-		const newState = {} // calculate newState
+		const newState = {
+			...state,
+			[section]: {
+				...state[section],
+				filter: newFilter
+			}
+		} // calculate newState
+
+		// using immer library
+		/* const newState = produce(state, draft => {
+			draft[section].filter = newFilter
+		})*/
 
 		// value checks
 		expect(newState.home.filter).toEqual('COMPLETED')
@@ -148,7 +185,18 @@ describe('Immutable operations usecases: State Objects', () => {
 			marked: false
 		}
 
-		const newState = {} // calculate newState
+		const newState = {
+			...state,
+			[section]: {
+				...state[section],
+				todos: [...state[section].todos, newItem]
+			}
+		} // calculate newState
+
+		// immer
+		/* const newState = produce(state, draft => {
+			draft[section].todos.push(newItem)
+		}) */
 
 		// value checks
 		expect(state.home.todos.length + 1).toEqual(newState.home.todos.length)
@@ -174,7 +222,37 @@ describe('Immutable operations usecases: State Objects', () => {
 		const section = "home"
 		const todoId = "ac518c53-d65f-422d-8dc2-550ea6719870"
 
-		const newState = {} // calculate newState
+		// solution (1) imperative
+		/* const todosClone = [...state[section].todos]
+		todosClone[idx] = {
+			...todosClone[idx],
+			marked: !todosClone[idx].marked
+		}
+		const newState = {
+			...state,
+			[section]: {
+				...state[section],
+				todos: todosClone
+			}
+		} */// calculate newState
+
+		// solution (2) declarative
+		const newState = {
+			...state,
+			[section]: {
+				...state[section],
+				todos: state[section].todos.map(t => 
+					t.id === todoId ?
+					{...t, marked: !t.marked}:
+					t)
+			}
+		}
+
+		// immer 
+		/* const newState = produce(state, draft => {
+			const todo = draft[section].todos.find(t => t.id === todoId)
+			todo.marked = !todo.marked
+		}) */
 
 		const idx = state.home.todos.findIndex(t => t.id === todoId)
 		// value checks
@@ -202,7 +280,18 @@ describe('Immutable operations usecases: State Objects', () => {
 
 		const section = "home"
 
-		const newState = {} // calculate newState
+		const newState = {
+			...state,
+			[section]: {
+				...state[section],
+				todos: state[section].todos.filter(t => !t.marked)
+			}
+		} // calculate newState
+
+		// immer
+		/*  const newState = produce(state, draft => {
+			draft[section].todos = draft[section].todos.filter(t => !t.marked)
+		}) */
 
 		// value checks
 		expect(state.home.todos.length).toEqual(30)

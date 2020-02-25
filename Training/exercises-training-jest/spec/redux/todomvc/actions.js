@@ -28,3 +28,8 @@ export const markAll = () => ({
 export const clearMarked = () => ({
 	type: CLEAR_MARKED
 })
+
+export const setFilter = (value) => ({
+	type: SET_FILTER,
+	value
+})

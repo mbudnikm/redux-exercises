@@ -3,19 +3,29 @@ import thunk from 'redux-thunk'
 
 import { async__getTodoById } from '../../../data'
 
-// part 0. run: npm i redux reselect redux-thunk
+// part 0. run: npm i redux reselect redux-thunk redux-devtools
 // part 1. finish the reducer
 // part 2. dispatch actions to modify todos
 // part 3. extend store with ability to filter todos
 // part 4. implement async action creators (thunk middleware)
 
-import { addTodo, editTodo, deleteTodo, markTodo, markAll, clearMarked } from './actions'
-import { todosReducer as todos } from './reducers'
+import { addTodo, editTodo, deleteTodo, markTodo, markAll, clearMarked, setFilter } from './actions'
+import { todosReducer as todos, filterReducer as filter } from './reducers'
+import { FILTERS } from './constants'
+import { getVisibleTodos, getTodosCount, getActiveTodos, getCompletedTodos } from './selectors'
+
+const rootReducer = combineReducers({
+	todos,
+	filter
+})
 
 describe('Redux TodoMVC', () => {
 	let store
 	beforeEach(() => {
-		store = createStore(todos)
+		const middlewares = [thunk]
+		store = createStore(rootReducer,
+			applyMiddleware(...middlewares)
+		)
 	})
 
 	//=========================================
@@ -23,24 +33,33 @@ describe('Redux TodoMVC', () => {
 
 	it('can dispatch actions to modify todos', () => {
 		expect(store.getState().todos.length).toEqual(0)
+		store.dispatch(addTodo("1"))
+		store.dispatch(addTodo("2"))
+		store.dispatch(addTodo("3"))
+		store.dispatch(addTodo("4"))
 		// add 4 todos
 		// ...
 		expect(store.getState().todos.length).toEqual(4)
+		store.dispatch(editTodo(2, "Order 2 pizzas"))
 		// modify todo id:2 to be "Order 2 pizzas"
 		// ...
 		expect(store.getState().todos.length).toEqual(4)
+		store.dispatch(deleteTodo(3))
 		// delete todo id:3
 		// ...
 		expect(store.getState().todos.find(t => t.id === 3)).toEqual(undefined)
 		expect(store.getState().todos.length).toEqual(3)
 		expect(store.getState().todos.find(t => t.id === 1).marked).toEqual(false)
+		store.dispatch(markTodo(1))
 		// mark todo id:1
 		// ...
 		expect(store.getState().todos.find(t => t.id === 1).marked).toEqual(true)
+		store.dispatch(clearMarked())
 		// clear all marked todos
 		// ...
 		expect(store.getState().todos.find(t => t.id === 1)).toEqual(undefined)
 		expect(store.getState().todos.length).toEqual(2)
+		store.dispatch(markAll())
 		// mark all todos
 		// ...
 		expect(store.getState().todos.every(t => t.marked)).toEqual(true)
@@ -87,6 +106,8 @@ describe('Redux TodoMVC', () => {
 		it('can filter:ALL todos', () => {
 			// set the filter to: ALL todos
 			//...
+			store.dispatch(setFilter(FILTERS.ALL))
+
 			state = store.getState()
 			expect(getVisibleTodos(state).length).toEqual(4)
 			expect(getTodosCount(state)).toEqual(4)
@@ -110,6 +131,8 @@ describe('Redux TodoMVC', () => {
 		it('can filter:ACTIVE todos', () => {
 			// set the filter to: ACTIVE todos
 			//...
+			store.dispatch(setFilter(FILTERS.ACTIVE))
+
 			state = store.getState()
 			expect(getVisibleTodos(state).length).toEqual(4)
 			expect(getCompletedTodos(state).length).toEqual(0)
@@ -137,6 +160,8 @@ describe('Redux TodoMVC', () => {
 		it('can filter:COMPLETED todos', () => {
 			// set the filter to: COMPLETED todos
 			//...
+			store.dispatch(setFilter(FILTERS.COMPLETED))
+
 			state = store.getState()
 			expect(getVisibleTodos(state).length).toEqual(0)
 			expect(getActiveTodos(state).length).toEqual(4)
@@ -166,10 +191,24 @@ describe('Redux TodoMVC', () => {
 	// part 3. implementing async action creators (thunk middleware)
 
 	describe('async actions', () => {
+		let store
+		beforeEach(() => {
+			const middlewares = [thunk]
+			store = createStore(rootReducer,
+				applyMiddleware(...middlewares)
+			)
+		})
 		// write function: `fetchTodo(id)` which dispatches action objects
 		// for 3 scenarios - request: started, succeeded, failed.
 		// use API.getTodoById(id) in order to fetch a Todo
 		// tip: use thunk middleware (adapt store configur`ation)
+
+		const fetchTodo = (id) => // EXTERNAL
+			(dispatch, getState) => { // INTERNAL
+				return async__getTodoById(id)
+					.then((res) => dispatch(addTodo(res)))
+			}
+		
 
 		it('can dispatch functions with promises', (done) => {
 			const id = "a41d05d1-9c42-4772-948d-5c9472ad5a73"
